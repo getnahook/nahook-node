@@ -22,7 +22,7 @@ export interface SendOptions {
 
 export interface SendResult {
   deliveryId: string;
-  idempotencyKey?: string;
+  idempotencyKey: string;
   status: "accepted";
 }
 
@@ -109,12 +109,11 @@ export interface PortalSession {
 
 export interface ListResult<T> {
   data: T[];
-  nextCursor?: string;
 }
 
 export interface ListOptions {
-  cursor?: string;
   limit?: number;
+  offset?: number;
 }
 
 export interface CreateEndpointOptions {

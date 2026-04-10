@@ -1,14 +1,14 @@
-import { HttpClient, type Endpoint, type ListResult, type ListOptions, type CreateEndpointOptions, type UpdateEndpointOptions } from "@nahook/core";
+import { HttpClient, type Endpoint, type ListResult, type CreateEndpointOptions, type UpdateEndpointOptions } from "@nahook/core";
 
 export class EndpointsResource {
   constructor(private readonly http: HttpClient) {}
 
-  async list(workspaceId: string, options?: ListOptions): Promise<ListResult<Endpoint>> {
-    return this.http.request({
+  async list(workspaceId: string): Promise<ListResult<Endpoint>> {
+    const data = await this.http.request<Endpoint[]>({
       method: "GET",
       path: `/management/v1/workspaces/${encodeURIComponent(workspaceId)}/endpoints`,
-      query: { cursor: options?.cursor, limit: options?.limit },
     });
+    return { data };
   }
 
   async create(workspaceId: string, options: CreateEndpointOptions): Promise<Endpoint> {

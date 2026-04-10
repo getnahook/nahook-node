@@ -4,10 +4,11 @@ export class EventTypesResource {
   constructor(private readonly http: HttpClient) {}
 
   async list(workspaceId: string): Promise<ListResult<EventType>> {
-    return this.http.request({
+    const data = await this.http.request<EventType[]>({
       method: "GET",
       path: `/management/v1/workspaces/${encodeURIComponent(workspaceId)}/event-types`,
     });
+    return { data };
   }
 
   async create(workspaceId: string, options: CreateEventTypeOptions): Promise<EventType> {

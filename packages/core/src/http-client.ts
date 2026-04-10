@@ -4,6 +4,8 @@ import type { RequestOptions } from "./types.js";
 
 const DEFAULT_BASE_URL = "https://api.nahook.com";
 const DEFAULT_TIMEOUT_MS = 30_000;
+const SDK_VERSION = "0.1.0";
+const USER_AGENT = `nahook-node/${SDK_VERSION}`;
 
 export interface HttpClientConfig {
   token: string;
@@ -46,6 +48,7 @@ export class HttpClient {
     const headers: Record<string, string> = {
       "Authorization": `Bearer ${this.token}`,
       "Accept": "application/json",
+      "User-Agent": USER_AGENT,
     };
     if (hasBody) {
       headers["Content-Type"] = "application/json";

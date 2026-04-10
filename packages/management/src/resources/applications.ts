@@ -4,11 +4,12 @@ export class ApplicationsResource {
   constructor(private readonly http: HttpClient) {}
 
   async list(workspaceId: string, options?: ListOptions): Promise<ListResult<Application>> {
-    return this.http.request({
+    const data = await this.http.request<Application[]>({
       method: "GET",
       path: `/management/v1/workspaces/${encodeURIComponent(workspaceId)}/applications`,
-      query: { limit: options?.limit, offset: options?.cursor ? parseInt(options.cursor, 10) : undefined },
+      query: { limit: options?.limit, offset: options?.offset },
     });
+    return { data };
   }
 
   async create(workspaceId: string, options: CreateApplicationOptions): Promise<Application> {
@@ -42,10 +43,11 @@ export class ApplicationsResource {
   }
 
   async listEndpoints(workspaceId: string, appId: string): Promise<ListResult<Endpoint>> {
-    return this.http.request({
+    const data = await this.http.request<Endpoint[]>({
       method: "GET",
       path: `/management/v1/workspaces/${encodeURIComponent(workspaceId)}/applications/${encodeURIComponent(appId)}/endpoints`,
     });
+    return { data };
   }
 
   async createEndpoint(workspaceId: string, appId: string, options: CreateEndpointOptions): Promise<Endpoint> {

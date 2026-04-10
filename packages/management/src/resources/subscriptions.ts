@@ -4,10 +4,11 @@ export class SubscriptionsResource {
   constructor(private readonly http: HttpClient) {}
 
   async list(workspaceId: string, endpointId: string): Promise<ListResult<Subscription>> {
-    return this.http.request({
+    const data = await this.http.request<Subscription[]>({
       method: "GET",
       path: `/management/v1/workspaces/${encodeURIComponent(workspaceId)}/endpoints/${encodeURIComponent(endpointId)}/subscriptions`,
     });
+    return { data };
   }
 
   async create(workspaceId: string, endpointId: string, options: CreateSubscriptionOptions): Promise<Subscription> {
