@@ -27,12 +27,13 @@ export class NahookClient {
 
   /** Send a payload to a specific endpoint */
   async send(endpointId: string, options: SendOptions): Promise<SendResult> {
+    const idempotencyKey = options.idempotencyKey ?? crypto.randomUUID();
     return this.http.request<SendResult>({
       method: "POST",
       path: `/api/ingest/${encodeURIComponent(endpointId)}`,
       body: {
         payload: options.payload,
-        ...(options.idempotencyKey ? { idempotencyKey: options.idempotencyKey } : {}),
+        idempotencyKey,
       },
     });
   }

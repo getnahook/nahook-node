@@ -26,19 +26,36 @@ export class HttpClient {
   }
 
   async request<T>(opts: RequestOptions): Promise<T> {
+    const response = await this.executeWithRetry(opts);
+    return this.handleResponse<T>(response);
+  }
+
+  /** Fire request expecting 202 or 207 — returns status code alongside data */
+  async requestWithStatus<T>(opts: RequestOptions): Promise<{ status: number; data: T }> {
+    const response = await this.executeWithRetry(opts);
+    if (response.ok) {
+      const data = await response.json() as T;
+      return { status: response.status, data };
+    }
+    throw await this.parseError(response);
+  }
+
+  private async executeWithRetry(opts: RequestOptions): Promise<Response> {
     const url = this.buildUrl(opts.path, opts.query);
+    const hasBody = opts.body !== undefined;
+    const headers: Record<string, string> = {
+      "Authorization": `Bearer ${this.token}`,
+      "Accept": "application/json",
+    };
+    if (hasBody) {
+      headers["Content-Type"] = "application/json";
+    }
+
     const init: RequestInit = {
       method: opts.method,
-      headers: {
-        "Authorization": `Bearer ${this.token}`,
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-      },
+      headers,
+      ...(hasBody ? { body: JSON.stringify(opts.body) } : {}),
     };
-
-    if (opts.body !== undefined) {
-      init.body = JSON.stringify(opts.body);
-    }
 
     let lastError: unknown;
 
@@ -53,7 +70,18 @@ export class HttpClient {
 
       try {
         const response = await this.fetchWithTimeout(url, init);
-        return await this.handleResponse<T>(response);
+
+        // For retryable status codes, parse error and potentially retry
+        if (!response.ok) {
+          const error = await this.parseError(response);
+          if (attempt < this.retries && isRetryable(error)) {
+            lastError = error;
+            continue;
+          }
+          throw error;
+        }
+
+        return response;
       } catch (error) {
         lastError = error;
         if (attempt < this.retries && isRetryable(error)) {
@@ -64,55 +92,6 @@ export class HttpClient {
     }
 
     // Unreachable, but TypeScript needs it
-    throw lastError;
-  }
-
-  /** Fire request expecting 202 or 207 — returns raw response for status inspection */
-  async requestWithStatus<T>(opts: RequestOptions): Promise<{ status: number; data: T }> {
-    const url = this.buildUrl(opts.path, opts.query);
-    const init: RequestInit = {
-      method: opts.method,
-      headers: {
-        "Authorization": `Bearer ${this.token}`,
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-      },
-    };
-
-    if (opts.body !== undefined) {
-      init.body = JSON.stringify(opts.body);
-    }
-
-    let lastError: unknown;
-
-    for (let attempt = 0; attempt <= this.retries; attempt++) {
-      if (attempt > 0) {
-        const retryAfterMs = lastError instanceof NahookAPIError
-          ? (lastError.retryAfter ?? 0) * 1000
-          : undefined;
-        const delay = calculateDelay(attempt - 1, retryAfterMs);
-        await sleep(delay);
-      }
-
-      try {
-        const response = await this.fetchWithTimeout(url, init);
-
-        if (response.ok) {
-          const data = await response.json() as T;
-          return { status: response.status, data };
-        }
-
-        const error = await this.parseError(response);
-        throw error;
-      } catch (error) {
-        lastError = error;
-        if (attempt < this.retries && isRetryable(error)) {
-          continue;
-        }
-        throw error;
-      }
-    }
-
     throw lastError;
   }
 
