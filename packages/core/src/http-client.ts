@@ -7,6 +7,22 @@ const DEFAULT_TIMEOUT_MS = 30_000;
 const SDK_VERSION = "0.1.0";
 const USER_AGENT = `nahook-node/${SDK_VERSION}`;
 
+/** Region slug (from API key) → base URL */
+const REGION_BASE_URLS: Record<string, string> = {
+  us: "https://us.api.nahook.com",
+  eu: "https://eu.api.nahook.com",
+  ap: "https://ap.api.nahook.com",
+};
+
+/** Extract region slug from an nhk_ API key and resolve its base URL. */
+function resolveBaseUrl(token: string): string {
+  const match = token.match(/^nhk_([a-z]{2})_/);
+  if (match) {
+    return REGION_BASE_URLS[match[1]] ?? DEFAULT_BASE_URL;
+  }
+  return DEFAULT_BASE_URL;
+}
+
 export interface HttpClientConfig {
   token: string;
   baseUrl?: string;
@@ -22,7 +38,7 @@ export class HttpClient {
 
   constructor(config: HttpClientConfig) {
     this.token = config.token;
-    this.baseUrl = (config.baseUrl ?? DEFAULT_BASE_URL).replace(/\/+$/, "");
+    this.baseUrl = (config.baseUrl ?? resolveBaseUrl(config.token)).replace(/\/+$/, "");
     this.timeout = config.timeout ?? DEFAULT_TIMEOUT_MS;
     this.retries = config.retries ?? 0;
   }
