@@ -7,7 +7,7 @@ describe("NahookClient", () => {
   });
 
   it("accepts valid API key", () => {
-    expect(() => new NahookClient("nhk_test123")).not.toThrow();
+    expect(() => new NahookClient("nhk_us_test123")).not.toThrow();
   });
 
   describe("with mocked fetch", () => {
@@ -21,7 +21,7 @@ describe("NahookClient", () => {
       globalThis.fetch = originalFetch;
     });
 
-    const client = new NahookClient("nhk_test123", { baseUrl: "https://api.test.com" });
+    const client = new NahookClient("nhk_us_test123", { baseUrl: "https://api.test.com" });
 
     it("send() calls correct endpoint", async () => {
       (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(
@@ -35,7 +35,7 @@ describe("NahookClient", () => {
       const [url, init] = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
       expect(url).toContain("/api/ingest/ep_123");
       expect(init.method).toBe("POST");
-      expect(init.headers.Authorization).toBe("Bearer nhk_test123");
+      expect(init.headers.Authorization).toBe("Bearer nhk_us_test123");
     });
 
     it("trigger() calls correct endpoint", async () => {
