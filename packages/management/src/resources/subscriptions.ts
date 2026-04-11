@@ -1,4 +1,4 @@
-import { HttpClient, type Subscription, type ListResult, type CreateSubscriptionOptions } from "@nahook/core";
+import { HttpClient, type Subscription, type ListResult, type CreateSubscriptionOptions, type CreateSubscriptionResult } from "@nahook/core";
 
 export class SubscriptionsResource {
   constructor(private readonly http: HttpClient) {}
@@ -11,7 +11,7 @@ export class SubscriptionsResource {
     return { data };
   }
 
-  async create(workspaceId: string, endpointId: string, options: CreateSubscriptionOptions): Promise<Subscription> {
+  async create(workspaceId: string, endpointId: string, options: CreateSubscriptionOptions): Promise<CreateSubscriptionResult> {
     return this.http.request({
       method: "POST",
       path: `/management/v1/workspaces/${encodeURIComponent(workspaceId)}/endpoints/${encodeURIComponent(endpointId)}/subscriptions`,

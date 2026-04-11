@@ -154,7 +154,11 @@ export interface UpdateApplicationOptions {
 }
 
 export interface CreateSubscriptionOptions {
-  eventTypeId: string;
+  eventTypeIds: string[];
+}
+
+export interface CreateSubscriptionResult {
+  subscribed: number;
 }
 
 export interface CreatePortalSessionOptions {

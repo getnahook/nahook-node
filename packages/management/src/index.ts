@@ -18,5 +18,6 @@ export {
   type CreateApplicationOptions,
   type UpdateApplicationOptions,
   type CreateSubscriptionOptions,
+  type CreateSubscriptionResult,
   type CreatePortalSessionOptions,
 } from "@nahook/core";
