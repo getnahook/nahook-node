@@ -20,4 +20,9 @@ export {
   type CreateSubscriptionOptions,
   type CreateSubscriptionResult,
   type CreatePortalSessionOptions,
+  type Environment,
+  type CreateEnvironmentOptions,
+  type UpdateEnvironmentOptions,
+  type EventTypeVisibility,
+  type SetVisibilityOptions,
 } from "@nahook/core";

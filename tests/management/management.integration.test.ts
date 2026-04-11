@@ -182,6 +182,96 @@ describe.skipIf(!HAS_ENV)("Management API Integration", () => {
     });
   });
 
+  // ── Environments CRUD ──
+
+  describe("Environments", () => {
+    let createdEnvId: string;
+
+    it("create environment", async () => {
+      const env = await mgmt.environments.create(WORKSPACE_ID!, {
+        name: `Test Env ${Date.now()}`,
+        slug: `test-env-${Date.now()}`,
+      });
+      expect(env.id).toBeTruthy();
+      expect(env.name).toMatch(/^Test Env/);
+      expect(env.slug).toMatch(/^test-env-/);
+      expect(env.isDefault).toBe(false);
+      createdEnvId = env.id;
+    });
+
+    it("list environments", async () => {
+      const result = await mgmt.environments.list(WORKSPACE_ID!);
+      expect(result.data.length).toBeGreaterThanOrEqual(1);
+      expect(result.data.some((e) => e.id === createdEnvId)).toBe(true);
+    });
+
+    it("get environment", async () => {
+      const env = await mgmt.environments.get(WORKSPACE_ID!, createdEnvId);
+      expect(env.id).toBe(createdEnvId);
+    });
+
+    it("update environment", async () => {
+      const env = await mgmt.environments.update(WORKSPACE_ID!, createdEnvId, {
+        name: "Updated Env Name",
+      });
+      expect(env.name).toBe("Updated Env Name");
+    });
+
+    it("delete environment", async () => {
+      await mgmt.environments.delete(WORKSPACE_ID!, createdEnvId);
+      await expect(
+        mgmt.environments.get(WORKSPACE_ID!, createdEnvId),
+      ).rejects.toThrow();
+    });
+  });
+
+  // ── Event Type Visibility ──
+
+  describe("Event Type Visibility", () => {
+    let envId: string;
+    let eventTypeId: string;
+
+    beforeAll(async () => {
+      const env = await mgmt.environments.create(WORKSPACE_ID!, {
+        name: `Vis Env ${Date.now()}`,
+        slug: `vis-env-${Date.now()}`,
+      });
+      envId = env.id;
+
+      const et = await mgmt.eventTypes.create(WORKSPACE_ID!, {
+        name: `vis.test.${Date.now()}`,
+      });
+      eventTypeId = et.id;
+    });
+
+    it("list event type visibility", async () => {
+      const result = await mgmt.environments.listEventTypeVisibility(WORKSPACE_ID!, envId);
+      expect(result.data.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it("set event type published", async () => {
+      const vis = await mgmt.environments.setEventTypeVisibility(
+        WORKSPACE_ID!, envId, eventTypeId, { published: true },
+      );
+      expect(vis.eventTypeId).toBe(eventTypeId);
+      expect(vis.published).toBe(true);
+    });
+
+    it("verify published in list", async () => {
+      const result = await mgmt.environments.listEventTypeVisibility(WORKSPACE_ID!, envId);
+      const entry = result.data.find((v) => v.eventTypeId === eventTypeId);
+      expect(entry).toBeTruthy();
+      expect(entry!.published).toBe(true);
+    });
+
+    it("set event type unpublished", async () => {
+      const vis = await mgmt.environments.setEventTypeVisibility(
+        WORKSPACE_ID!, envId, eventTypeId, { published: false },
+      );
+      expect(vis.published).toBe(false);
+    });
+  });
+
   // ── Auth error ──
 
   it("invalid management token returns 401", async () => {

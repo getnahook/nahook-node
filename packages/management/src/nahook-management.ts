@@ -4,6 +4,7 @@ import { EventTypesResource } from "./resources/event-types.js";
 import { ApplicationsResource } from "./resources/applications.js";
 import { SubscriptionsResource } from "./resources/subscriptions.js";
 import { PortalSessionsResource } from "./resources/portal-sessions.js";
+import { EnvironmentsResource } from "./resources/environments.js";
 
 export class NahookManagement {
   readonly endpoints: EndpointsResource;
@@ -11,6 +12,7 @@ export class NahookManagement {
   readonly applications: ApplicationsResource;
   readonly subscriptions: SubscriptionsResource;
   readonly portalSessions: PortalSessionsResource;
+  readonly environments: EnvironmentsResource;
 
   constructor(token: string, options: Omit<ClientOptions, "retries"> = {}) {
     if (!token.startsWith("nhm_")) {
@@ -26,5 +28,6 @@ export class NahookManagement {
     this.applications = new ApplicationsResource(http);
     this.subscriptions = new SubscriptionsResource(http);
     this.portalSessions = new PortalSessionsResource(http);
+    this.environments = new EnvironmentsResource(http);
   }
 }

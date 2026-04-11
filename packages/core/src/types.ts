@@ -164,3 +164,31 @@ export interface CreateSubscriptionResult {
 export interface CreatePortalSessionOptions {
   metadata?: Record<string, string>;
 }
+
+export interface Environment {
+  id: string;
+  name: string;
+  slug: string;
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateEnvironmentOptions {
+  name: string;
+  slug: string;
+}
+
+export interface UpdateEnvironmentOptions {
+  name: string;
+}
+
+export interface EventTypeVisibility {
+  eventTypeId: string;
+  eventTypeName: string;
+  published: boolean;
+}
+
+export interface SetVisibilityOptions {
+  published: boolean;
+}
