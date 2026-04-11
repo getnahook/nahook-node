@@ -6,7 +6,7 @@ Two packages, one repo:
 
 | Package | Purpose | Auth |
 |---------|---------|------|
-| [`@nahook/client`](#nahookclient) | Send and trigger webhook events | API key (`nhk_...`) |
+| [`@nahook/client`](#nahookclient) | Send and trigger webhook events | API key (`nhk_us_...`) |
 | [`@nahook/management`](#nahookmanagement) | Manage endpoints, event types, apps | Management token (`nhm_...`) |
 
 ## Requirements
@@ -38,7 +38,7 @@ Send webhooks to specific endpoints or fan-out by event type.
 ```typescript
 import { NahookClient } from "@nahook/client";
 
-const nahook = new NahookClient("nhk_...", {
+const nahook = new NahookClient("nhk_us_...", {
   retries: 3,        // default: 0 (no retries)
   timeout: 5_000,    // default: 30_000ms
   baseUrl: "...",     // default: https://api.nahook.com
