@@ -180,7 +180,7 @@ export interface CreateEnvironmentOptions {
 }
 
 export interface UpdateEnvironmentOptions {
-  name: string;
+  name?: string;
 }
 
 export interface EventTypeVisibility {
