@@ -1,0 +1,26 @@
+[
+  {
+    "description": "standard payload produces known signature",
+    "secret": "whsec_dGVzdF93ZWJob29rX3NpZ25pbmdfa2V5XzMyYnl0ZXMh",
+    "msgId": "msg_test_sig_001",
+    "timestamp": "1712345678",
+    "payload": "{\"order_id\":\"ord_123\",\"amount\":49.99}",
+    "expectedSignature": "v1,VF1JBS4kdSwmE64FeeiWTgszlPCfaop53x8bwzvHizw="
+  },
+  {
+    "description": "empty payload produces known signature",
+    "secret": "whsec_dGVzdF93ZWJob29rX3NpZ25pbmdfa2V5XzMyYnl0ZXMh",
+    "msgId": "msg_test_sig_001",
+    "timestamp": "1712345678",
+    "payload": "",
+    "expectedSignature": "v1,yNFeVvBSs4aZ/sVHHw1MaUWnN1IGK/Ul/16T8aptSJo="
+  },
+  {
+    "description": "unicode payload produces known signature",
+    "secret": "whsec_dGVzdF93ZWJob29rX3NpZ25pbmdfa2V5XzMyYnl0ZXMh",
+    "msgId": "msg_test_sig_001",
+    "timestamp": "1712345678",
+    "payload": "{\"name\":\"café\",\"price\":\"€9.99\"}",
+    "expectedSignature": "v1,GcuGAMV9tELnF2rjay6sA8uo5PDPPlhaFi6gKUg06wQ="
+  }
+]

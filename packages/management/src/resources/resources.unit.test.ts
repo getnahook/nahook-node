@@ -247,6 +247,73 @@ describe("Management Resources", () => {
     });
   });
 
+  // ── Environments ──
+
+  describe("environments", () => {
+    it("list() sends GET to /environments", async () => {
+      mockFetch([{ id: "env_1", name: "Production", slug: "production", isDefault: true }]);
+      const result = await mgmt.environments.list("ws_abc");
+      const { url, init } = lastCall();
+      expect(init.method).toBe("GET");
+      expect(url).toBe("https://api.test.com/management/v1/workspaces/ws_abc/environments");
+      expect(result.data).toHaveLength(1);
+    });
+
+    it("create() sends POST with body", async () => {
+      mockFetch({ id: "env_new", name: "Staging", slug: "staging", isDefault: false }, 201);
+      await mgmt.environments.create("ws_abc", { name: "Staging", slug: "staging" });
+      const { url, init } = lastCall();
+      expect(init.method).toBe("POST");
+      expect(url).toContain("/environments");
+      const body = JSON.parse(init.body as string);
+      expect(body.name).toBe("Staging");
+      expect(body.slug).toBe("staging");
+    });
+
+    it("get() sends GET to /environments/:id", async () => {
+      mockFetch({ id: "env_1", name: "Production", slug: "production", isDefault: true });
+      await mgmt.environments.get("ws_abc", "env_1");
+      const { url, init } = lastCall();
+      expect(init.method).toBe("GET");
+      expect(url).toBe("https://api.test.com/management/v1/workspaces/ws_abc/environments/env_1");
+    });
+
+    it("update() sends PATCH with body", async () => {
+      mockFetch({ id: "env_1", name: "Pre-production", slug: "production", isDefault: true });
+      await mgmt.environments.update("ws_abc", "env_1", { name: "Pre-production" });
+      const { url, init } = lastCall();
+      expect(init.method).toBe("PATCH");
+      expect(url).toContain("/environments/env_1");
+      expect(JSON.parse(init.body as string).name).toBe("Pre-production");
+    });
+
+    it("delete() sends DELETE", async () => {
+      mockFetch(undefined, 204);
+      await mgmt.environments.delete("ws_abc", "env_1");
+      const { url, init } = lastCall();
+      expect(init.method).toBe("DELETE");
+      expect(url).toContain("/environments/env_1");
+    });
+
+    it("listEventTypeVisibility() sends GET to /environments/:id/event-types", async () => {
+      mockFetch([{ eventTypeName: "order.created", published: true }]);
+      const result = await mgmt.environments.listEventTypeVisibility("ws_abc", "env_1");
+      const { url, init } = lastCall();
+      expect(init.method).toBe("GET");
+      expect(url).toBe("https://api.test.com/management/v1/workspaces/ws_abc/environments/env_1/event-types");
+      expect(result.data).toHaveLength(1);
+    });
+
+    it("setEventTypeVisibility() sends PUT with body", async () => {
+      mockFetch({ eventTypeName: "order.created", published: true });
+      await mgmt.environments.setEventTypeVisibility("ws_abc", "env_1", "evt_1", { published: true });
+      const { url, init } = lastCall();
+      expect(init.method).toBe("PUT");
+      expect(url).toBe("https://api.test.com/management/v1/workspaces/ws_abc/environments/env_1/event-types/evt_1/visibility");
+      expect(JSON.parse(init.body as string).published).toBe(true);
+    });
+  });
+
   // ── Headers ──
 
   describe("headers", () => {

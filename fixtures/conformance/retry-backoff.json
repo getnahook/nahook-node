@@ -1,0 +1,5 @@
+[
+  { "attempt": 0, "retryAfterMs": null, "expect": { "minDelay": 0, "maxDelay": 500 } },
+  { "attempt": 10, "retryAfterMs": null, "expect": { "minDelay": 0, "maxDelay": 10000 } },
+  { "attempt": 0, "retryAfterMs": 5000, "expect": { "minDelay": 5000, "maxDelay": 5000 } }
+]

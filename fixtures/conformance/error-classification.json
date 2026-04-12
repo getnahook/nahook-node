@@ -1,0 +1,9 @@
+[
+  { "status": 500, "code": "server_error", "message": "Internal error", "expect": { "isRetryable": true, "isAuthError": false, "isNotFound": false, "isRateLimited": false, "isValidationError": false } },
+  { "status": 429, "code": "rate_limited", "message": "Slow down", "retryAfter": 30, "expect": { "isRetryable": true, "isAuthError": false, "isNotFound": false, "isRateLimited": true, "isValidationError": false } },
+  { "status": 404, "code": "not_found", "message": "Missing", "expect": { "isRetryable": false, "isAuthError": false, "isNotFound": true, "isRateLimited": false, "isValidationError": false } },
+  { "status": 401, "code": "unauthorized", "message": "Bad key", "expect": { "isRetryable": false, "isAuthError": true, "isNotFound": false, "isRateLimited": false, "isValidationError": false } },
+  { "status": 403, "code": "token_disabled", "message": "Disabled", "expect": { "isRetryable": false, "isAuthError": true, "isNotFound": false, "isRateLimited": false, "isValidationError": false } },
+  { "status": 403, "code": "forbidden", "message": "Nope", "expect": { "isRetryable": false, "isAuthError": false, "isNotFound": false, "isRateLimited": false, "isValidationError": false } },
+  { "status": 400, "code": "bad_request", "message": "Invalid", "expect": { "isRetryable": false, "isAuthError": false, "isNotFound": false, "isRateLimited": false, "isValidationError": true } }
+]

@@ -1,0 +1,6 @@
+[
+  { "token": "nhk_us_abc123", "expectedBaseUrl": "https://us.api.nahook.com" },
+  { "token": "nhk_eu_abc123", "expectedBaseUrl": "https://eu.api.nahook.com" },
+  { "token": "nhk_ap_abc123", "expectedBaseUrl": "https://ap.api.nahook.com" },
+  { "token": "nhk_zz_abc123", "expectedBaseUrl": "https://api.nahook.com" }
+]

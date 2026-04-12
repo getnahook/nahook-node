@@ -1,0 +1,44 @@
+[
+  {
+    "id": "NEG-01",
+    "description": "malformed JSON response body",
+    "responseStatus": 200,
+    "responseBody": "not json {{{",
+    "responseContentType": "application/json"
+  },
+  {
+    "id": "NEG-02",
+    "description": "empty body on 200",
+    "responseStatus": 200,
+    "responseBody": "",
+    "responseContentType": "application/json"
+  },
+  {
+    "id": "NEG-03",
+    "description": "5xx with HTML body",
+    "responseStatus": 503,
+    "responseBody": "<html><body>Service Unavailable</body></html>",
+    "responseContentType": "text/html"
+  },
+  {
+    "id": "NEG-04",
+    "description": "5xx with empty body",
+    "responseStatus": 500,
+    "responseBody": "",
+    "responseContentType": "application/json"
+  },
+  {
+    "id": "NEG-05",
+    "description": "200 with extra unknown fields",
+    "responseStatus": 200,
+    "responseBody": "[{\"id\":\"ep_1\",\"url\":\"https://example.com\",\"unknownField\":\"surprise\",\"nested\":{\"deep\":true}}]",
+    "responseContentType": "application/json"
+  },
+  {
+    "id": "NEG-06",
+    "description": "200 with minimal fields",
+    "responseStatus": 200,
+    "responseBody": "[{\"id\":\"ep_1\"}]",
+    "responseContentType": "application/json"
+  }
+]
