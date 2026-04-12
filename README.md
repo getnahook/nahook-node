@@ -38,12 +38,29 @@ Send webhooks to specific endpoints or fan-out by event type.
 ```typescript
 import { NahookClient } from "@nahook/client";
 
+// Simple
+const nahook = new NahookClient("nhk_us_...");
+
+// With options
 const nahook = new NahookClient("nhk_us_...", {
   retries: 3,        // default: 0 (no retries)
   timeout: 5_000,    // default: 30_000ms
-  baseUrl: "...",     // default: https://api.nahook.com
 });
 ```
+
+### Configuration
+
+The SDK automatically routes requests to the correct regional API based on your API key prefix (`nhk_us_...` -> US, `nhk_eu_...` -> EU, `nhk_ap_...` -> Asia Pacific). No configuration needed.
+
+To override the base URL (for testing or local development):
+
+```typescript
+const nahook = new NahookClient("nhk_us_...", {
+  baseUrl: "http://localhost:3001",
+});
+```
+
+For unit tests, mock the SDK client at the dependency injection boundary. For integration tests, override the base URL to point at a local server.
 
 ### Send to a specific endpoint
 
@@ -109,9 +126,12 @@ Programmatically manage your Nahook workspace resources.
 ```typescript
 import { NahookManagement } from "@nahook/management";
 
+// Simple
+const mgmt = new NahookManagement("nhm_...");
+
+// With options
 const mgmt = new NahookManagement("nhm_...", {
   timeout: 10_000,   // default: 30_000ms
-  baseUrl: "...",     // default: https://api.nahook.com
   // Note: retries are not supported for management calls
 });
 ```
