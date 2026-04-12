@@ -3,8 +3,8 @@
   "SIG-02": ["rejects tampered payload — different signature"],
   "SIG-03": ["rejects wrong secret — different signature"],
   "SIG-04": ["is deterministic — same inputs produce same signature"],
-  "SIG-05": [],
-  "SIG-06": [],
+  "SIG-05": ["rejects empty or missing secret"],
+  "SIG-06": ["rejects malformed signature header"],
 
   "CLI-01": ["rejects invalid API key prefix"],
   "CLI-02": ["accepts valid API key"],

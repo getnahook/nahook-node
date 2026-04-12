@@ -25,11 +25,34 @@ function computeSignature(
   timestamp: string,
   payload: string,
 ): string {
+  if (!secret) throw new Error("Secret must not be empty");
   const rawSecret = secret.startsWith("whsec_") ? secret.slice(6) : secret;
+  if (!rawSecret) throw new Error("Secret must not be empty");
   const key = Buffer.from(rawSecret, "base64");
   const toSign = `${msgId}.${timestamp}.${payload}`;
   const digest = createHmac("sha256", key).update(toSign).digest("base64");
   return `v1,${digest}`;
+}
+
+function verifySignature(
+  secret: string,
+  signatureHeader: string,
+  msgId: string,
+  payload: string,
+): boolean {
+  if (!secret) throw new Error("Secret must not be empty");
+  const parts = signatureHeader.split(",");
+  if (parts.length < 2 || parts[0] !== "v1" || !parts[1])
+    throw new Error("Malformed signature header: missing v1, prefix or empty signature");
+  const timestamp = msgId.split(".")[1]; // unused here, but validates structure
+  const expected = computeSignature(secret, msgId, parts[0] === "v1" ? parts[1] : "", payload);
+  return signatureHeader === expected;
+}
+
+function parseSignatureHeader(header: string): { version: string; timestamp: string; signature: string } {
+  const match = header.match(/^v1,(\d+),(.+)$/);
+  if (!match) throw new Error("Malformed signature header: expected format v1,{timestamp},{signature}");
+  return { version: "v1", timestamp: match[1], signature: match[2] };
 }
 
 describe("Webhook Signature Verification", () => {
@@ -131,5 +154,21 @@ describe("Webhook Signature Verification", () => {
       '{"name":"café","price":"€9.99"}',
     );
     expect(sig).toBe("v1,GcuGAMV9tELnF2rjay6sA8uo5PDPPlhaFi6gKUg06wQ=");
+  });
+
+  it("rejects empty or missing secret", () => {
+    expect(() => computeSignature("", MSG_ID, TIMESTAMP, PAYLOAD)).toThrow("Secret must not be empty");
+    expect(() => computeSignature("whsec_", MSG_ID, TIMESTAMP, PAYLOAD)).toThrow("Secret must not be empty");
+  });
+
+  it("rejects malformed signature header", () => {
+    // Missing v1, prefix
+    expect(() => parseSignatureHeader("bad_header")).toThrow("Malformed signature header");
+    // Empty string
+    expect(() => parseSignatureHeader("")).toThrow("Malformed signature header");
+    // Missing timestamp
+    expect(() => parseSignatureHeader("v1,,abc")).toThrow("Malformed signature header");
+    // Just v1 with no content
+    expect(() => parseSignatureHeader("v1,")).toThrow("Malformed signature header");
   });
 });
