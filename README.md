@@ -190,10 +190,42 @@ const ep = await mgmt.applications.createEndpoint("ws_abc", "app_123", {
 const { data } = await mgmt.subscriptions.list("ws_abc", "ep_123");
 
 await mgmt.subscriptions.create("ws_abc", "ep_123", {
-  eventTypeId: "evt_456",
+  eventTypeIds: ["evt_456"],
 });
 
 await mgmt.subscriptions.delete("ws_abc", "ep_123", "evt_456");
+```
+
+### Environments
+
+```typescript
+const { data } = await mgmt.environments.list("ws_abc");
+
+const env = await mgmt.environments.create("ws_abc", {
+  name: "Staging",
+  slug: "staging",
+});
+
+const env = await mgmt.environments.get("ws_abc", "env_123");
+
+await mgmt.environments.update("ws_abc", "env_123", {
+  name: "Pre-production",
+});
+
+await mgmt.environments.delete("ws_abc", "env_123");
+```
+
+### Event Type Visibility
+
+Control which event types are visible per environment.
+
+```typescript
+const { data } = await mgmt.environments.listEventTypeVisibility("ws_abc", "env_123");
+
+const vis = await mgmt.environments.setEventTypeVisibility("ws_abc", "env_123", "evt_456", {
+  published: true,
+});
+// { eventTypeId: "evt_456", eventTypeName: "order.paid", published: true }
 ```
 
 ### Portal Sessions
