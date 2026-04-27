@@ -25,6 +25,11 @@
   },
   "keywords": ["nahook", "webhooks", "management", "api"],
   "license": "MIT",
+  "author": {
+    "name": "Nahook",
+    "email": "support@nahook.com",
+    "url": "https://nahook.com"
+  },
   "homepage": "https://github.com/getnahook/nahook-node#readme",
   "bugs": "https://github.com/getnahook/nahook-node/issues",
   "repository": {
