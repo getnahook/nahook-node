@@ -24,5 +24,12 @@
     "node": ">=18.0.0"
   },
   "keywords": ["nahook", "webhooks", "management", "api"],
-  "license": "MIT"
+  "license": "MIT",
+  "homepage": "https://github.com/getnahook/nahook-node#readme",
+  "bugs": "https://github.com/getnahook/nahook-node/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/getnahook/nahook-node.git",
+    "directory": "packages/management"
+  }
 }
