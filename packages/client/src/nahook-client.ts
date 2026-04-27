@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import {
   HttpClient,
   type ClientOptions,
@@ -27,7 +28,7 @@ export class NahookClient {
 
   /** Send a payload to a specific endpoint */
   async send(endpointId: string, options: SendOptions): Promise<SendResult> {
-    const idempotencyKey = options.idempotencyKey ?? crypto.randomUUID();
+    const idempotencyKey = options.idempotencyKey ?? randomUUID();
     return this.http.request<SendResult>({
       method: "POST",
       path: `/api/ingest/${encodeURIComponent(endpointId)}`,
