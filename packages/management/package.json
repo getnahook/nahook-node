@@ -17,7 +17,7 @@
   "scripts": {
     "build": "tsup"
   },
-  "dependencies": {
+  "devDependencies": {
     "@nahook/core": "*"
   },
   "engines": {
