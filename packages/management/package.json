@@ -1,6 +1,6 @@
 {
   "name": "@nahook/management",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Nahook management SDK — programmatic webhook, event type, and application management",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -18,7 +18,7 @@
     "build": "tsup"
   },
   "devDependencies": {
-    "@nahook/core": "*"
+    "@nahook/core": "0.1.1"
   },
   "engines": {
     "node": ">=18.0.0"

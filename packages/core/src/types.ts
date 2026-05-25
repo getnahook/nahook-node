@@ -82,6 +82,7 @@ export interface EventType {
   id: string;
   name: string;
   description: string | null;
+  subscriberCount: number;
   createdAt: string;
 }
 
@@ -98,6 +99,7 @@ export interface Subscription {
   id: string;
   endpointId: string;
   eventTypeId: string;
+  eventTypeName: string;
   createdAt: string;
 }
 
@@ -168,6 +170,8 @@ export interface CreateSubscriptionResult {
 
 export interface CreatePortalSessionOptions {
   metadata?: Record<string, string>;
+  role?: string;
+  expiresInMinutes?: number;
 }
 
 export interface Environment {
