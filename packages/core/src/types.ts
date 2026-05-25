@@ -124,6 +124,11 @@ export interface CreateEndpointOptions {
   config?: Record<string, unknown>;
   authUsername?: string;
   authPassword?: string;
+  /**
+   * Optional. Public id (e.g. `env_abc123`) of the environment to scope this endpoint.
+   * If omitted, the workspace's default environment is used.
+   */
+  environmentId?: string;
 }
 
 export interface UpdateEndpointOptions {
