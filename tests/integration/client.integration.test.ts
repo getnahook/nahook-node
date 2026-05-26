@@ -99,7 +99,11 @@ describe.skipIf(!HAS_ENV)("trigger()", () => {
   it("should return empty deliveryIds for unsubscribed event type", async () => {
     const client = createClient();
 
-    const result = await client.trigger(`noop.unsubscribed.${Date.now()}`, {
+    // Pre-seeded fixture event type with zero endpoint subscriptions —
+    // see packages/db/src/seeds/test-fixtures.sql section 8b. Was previously
+    // `noop.unsubscribed.${Date.now()}` which relied on the pre-NAH-145
+    // auto-create behavior; strict lookup now 404s unknown names.
+    const result = await client.trigger("event.type.nobody.subscribed.to", {
       payload: { test: true },
     });
 
