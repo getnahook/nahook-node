@@ -292,13 +292,14 @@ describe.skipIf(!HAS_ENV)("Management API Integration", () => {
       expect(result.nextCursor).not.toMatch(/^del_/); // not the leaky publicId format
     });
 
-    it("list with status filter returns only matching deliveries", async () => {
+    it("list with status=failed returns exactly the one failed fixture delivery", async () => {
       const result = await mgmt.deliveries.list(WORKSPACE_ID!, "ep_integration_test_001", { status: "failed" });
-      const failedFixture = result.data.find((d) => d.id === "del_fixture_002");
-      expect(failedFixture).toBeTruthy();
-      expect(failedFixture!.status).toBe("failed");
-      expect(failedFixture!.totalAttempts).toBe(3);
-      expect(failedFixture!.hasPayload).toBe(false);
+      expect(result.data.length).toBe(1);
+      const failed = result.data[0];
+      expect(failed.id).toBe("del_fixture_002");
+      expect(failed.status).toBe("failed");
+      expect(failed.totalAttempts).toBe(3);
+      expect(failed.hasPayload).toBe(false);
     });
 
     it("get returns a single delivery's metadata without payload envelope by default", async () => {
@@ -328,7 +329,7 @@ describe.skipIf(!HAS_ENV)("Management API Integration", () => {
       expect(attempts[0].responseStatusCode).toBe(502);
     });
 
-    it("get returns 404 for a delivery in another workspace (no cross-workspace enumeration)", async () => {
+    it("get returns 404 for a non-existent delivery", async () => {
       await expect(
         mgmt.deliveries.get(WORKSPACE_ID!, "del_does_not_exist_anywhere"),
       ).rejects.toThrow();
