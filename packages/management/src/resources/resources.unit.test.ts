@@ -314,6 +314,119 @@ describe("Management Resources", () => {
     });
   });
 
+  // ── Deliveries (NAH-156) ──
+
+  describe("deliveries", () => {
+    it("list() sends GET to /endpoints/:id/deliveries and exposes nextCursor + data", async () => {
+      mockFetch({
+        deliveries: [
+          { id: "del_a", endpointId: "ep_1", status: "delivered", hasPayload: true, totalAttempts: 1, firstAttemptAt: "2026-05-28T14:30:59Z", deliveredAt: "2026-05-28T14:30:59Z", nextRetryAt: null, idempotencyKey: "k1", createdAt: "2026-05-28T14:30:59Z", updatedAt: "2026-05-28T14:30:59Z" },
+          { id: "del_b", endpointId: "ep_1", status: "failed", hasPayload: false, totalAttempts: 3, firstAttemptAt: "2026-05-28T14:31:00Z", deliveredAt: null, nextRetryAt: null, idempotencyKey: "k2", createdAt: "2026-05-28T14:31:00Z", updatedAt: "2026-05-28T14:31:00Z" },
+        ],
+        nextCursor: "opaque-token-aaa",
+      });
+
+      const result = await mgmt.deliveries.list("ws_abc", "ep_1");
+      const { url, init } = lastCall();
+      expect(init.method).toBe("GET");
+      expect(url).toBe("https://api.test.com/management/v1/workspaces/ws_abc/endpoints/ep_1/deliveries");
+      expect(result.data).toHaveLength(2);
+      expect(result.data[0].id).toBe("del_a");
+      expect(result.nextCursor).toBe("opaque-token-aaa");
+    });
+
+    it("list() returns nextCursor: null when API returns null", async () => {
+      mockFetch({ deliveries: [], nextCursor: null });
+      const result = await mgmt.deliveries.list("ws_abc", "ep_1");
+      expect(result.data).toEqual([]);
+      expect(result.nextCursor).toBeNull();
+    });
+
+    it("list() forwards limit, cursor, and status query params", async () => {
+      mockFetch({ deliveries: [], nextCursor: null });
+      await mgmt.deliveries.list("ws_abc", "ep_1", {
+        limit: 25,
+        cursor: "opaque-token-xyz",
+        status: "failed",
+      });
+      const { url } = lastCall();
+      const parsed = new URL(url);
+      expect(parsed.searchParams.get("limit")).toBe("25");
+      expect(parsed.searchParams.get("cursor")).toBe("opaque-token-xyz");
+      expect(parsed.searchParams.get("status")).toBe("failed");
+    });
+
+    it("list() omits unset query params", async () => {
+      mockFetch({ deliveries: [], nextCursor: null });
+      await mgmt.deliveries.list("ws_abc", "ep_1");
+      const { url } = lastCall();
+      const parsed = new URL(url);
+      expect(parsed.searchParams.has("limit")).toBe(false);
+      expect(parsed.searchParams.has("cursor")).toBe(false);
+      expect(parsed.searchParams.has("status")).toBe(false);
+    });
+
+    it("get() sends GET to /deliveries/:id and returns shape without payload envelope", async () => {
+      mockFetch({
+        id: "del_a", idempotencyKey: "k1", endpointId: "ep_1", status: "delivered",
+        totalAttempts: 1, firstAttemptAt: "2026-05-28T14:30:59Z", deliveredAt: "2026-05-28T14:30:59Z",
+        nextRetryAt: null, hasPayload: true, createdAt: "2026-05-28T14:30:59Z", updatedAt: "2026-05-28T14:30:59Z",
+      });
+
+      const delivery = await mgmt.deliveries.get("ws_abc", "del_a");
+      const { url, init } = lastCall();
+      expect(init.method).toBe("GET");
+      expect(url).toBe("https://api.test.com/management/v1/workspaces/ws_abc/deliveries/del_a");
+      expect(delivery.id).toBe("del_a");
+      expect(delivery.hasPayload).toBe(true);
+      // Without includePayload, no envelope is requested or returned.
+      expect((delivery as { payload?: unknown }).payload).toBeUndefined();
+    });
+
+    it("get() with includePayload=true adds ?include=payload and returns available envelope", async () => {
+      mockFetch({
+        id: "del_a", idempotencyKey: "k1", endpointId: "ep_1", status: "delivered",
+        totalAttempts: 1, firstAttemptAt: "2026-05-28T14:30:59Z", deliveredAt: "2026-05-28T14:30:59Z",
+        nextRetryAt: null, hasPayload: true, createdAt: "2026-05-28T14:30:59Z", updatedAt: "2026-05-28T14:30:59Z",
+        payload: { status: "available", data: { orderId: "ord_123" }, contentType: "application/json" },
+      });
+
+      const delivery = await mgmt.deliveries.get("ws_abc", "del_a", { includePayload: true });
+      const { url } = lastCall();
+      expect(new URL(url).searchParams.get("include")).toBe("payload");
+      expect(delivery.payload).toEqual({
+        status: "available",
+        data: { orderId: "ord_123" },
+        contentType: "application/json",
+      });
+    });
+
+    it("get() surfaces forbidden envelope unchanged when plan lacks payload storage", async () => {
+      mockFetch({
+        id: "del_a", idempotencyKey: "k1", endpointId: "ep_1", status: "delivered",
+        totalAttempts: 1, firstAttemptAt: null, deliveredAt: "2026-05-28T14:30:59Z",
+        nextRetryAt: null, hasPayload: true, createdAt: "2026-05-28T14:30:59Z", updatedAt: "2026-05-28T14:30:59Z",
+        payload: { status: "forbidden" },
+      });
+      const delivery = await mgmt.deliveries.get("ws_abc", "del_a", { includePayload: true });
+      expect(delivery.payload).toEqual({ status: "forbidden" });
+    });
+
+    it("getAttempts() sends GET to /deliveries/:id/attempts and returns array", async () => {
+      mockFetch([
+        { id: "att_1", attemptNumber: 1, status: "failed", responseStatusCode: 502, responseTimeMs: 142, errorMessage: "Bad gateway", createdAt: "2026-05-28T14:31:00Z" },
+        { id: "att_2", attemptNumber: 2, status: "success", responseStatusCode: 200, responseTimeMs: 88, errorMessage: null, createdAt: "2026-05-28T14:31:30Z" },
+      ]);
+      const attempts = await mgmt.deliveries.getAttempts("ws_abc", "del_a");
+      const { url, init } = lastCall();
+      expect(init.method).toBe("GET");
+      expect(url).toBe("https://api.test.com/management/v1/workspaces/ws_abc/deliveries/del_a/attempts");
+      expect(attempts).toHaveLength(2);
+      expect(attempts[0].attemptNumber).toBe(1);
+      expect(attempts[1].status).toBe("success");
+    });
+  });
+
   // ── Headers ──
 
   describe("headers", () => {

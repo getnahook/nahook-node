@@ -113,6 +113,17 @@ export interface ListResult<T> {
   data: T[];
 }
 
+/**
+ * Cursor-paginated read result. Used by endpoints that paginate over
+ * potentially large collections (e.g. deliveries). `nextCursor` is an
+ * opaque, server-encrypted token — pass it back verbatim on the next
+ * request, do not decode or modify it. `null` when there are no more pages.
+ */
+export interface PaginatedResult<T> {
+  data: T[];
+  nextCursor: string | null;
+}
+
 export interface ListOptions {
   limit?: number;
   offset?: number;
@@ -200,4 +211,64 @@ export interface EventTypeVisibility {
 
 export interface SetVisibilityOptions {
   published: boolean;
+}
+
+// ── Deliveries (Management read) ──
+
+export type DeliveryStatus =
+  | "pending"
+  | "delivering"
+  | "delivered"
+  | "scheduled_retry"
+  | "failed"
+  | "dead_letter";
+
+export interface Delivery {
+  id: string;
+  idempotencyKey: string;
+  endpointId: string;
+  status: DeliveryStatus;
+  totalAttempts: number;
+  firstAttemptAt: string | null;
+  deliveredAt: string | null;
+  nextRetryAt: string | null;
+  hasPayload: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Discriminated union returned when `get()` is called with `includePayload: true`.
+ * Only `available` carries `data` and `contentType` — the other four statuses
+ * are status-only and describe why the payload could not be returned.
+ */
+export type PayloadEnvelope =
+  | { status: "available"; data: unknown; contentType: string }
+  | { status: "forbidden" }
+  | { status: "processing" }
+  | { status: "not_found" }
+  | { status: "error" };
+
+export interface DeliveryWithPayload extends Delivery {
+  payload?: PayloadEnvelope;
+}
+
+export interface DeliveryAttempt {
+  id: string;
+  attemptNumber: number;
+  status: string;
+  responseStatusCode: number | null;
+  responseTimeMs: number | null;
+  errorMessage: string | null;
+  createdAt: string;
+}
+
+export interface ListDeliveriesOptions {
+  limit?: number;
+  cursor?: string;
+  status?: DeliveryStatus;
+}
+
+export interface GetDeliveryOptions {
+  includePayload?: boolean;
 }

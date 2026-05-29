@@ -259,6 +259,39 @@ const session = await mgmt.portalSessions.create("ws_abc", "app_123", {
 // session.expiresAt -> expiration timestamp
 ```
 
+### Deliveries
+
+Read access to webhook delivery state, attempts, and (on Pro and above) the original decrypted payload.
+
+```typescript
+// Paginated list, newest-first. `nextCursor` is an opaque encrypted token —
+// pass it back verbatim, do not decode or modify it.
+const page = await mgmt.deliveries.list("ws_abc", "ep_123", { limit: 50 });
+// page.data         -> Delivery[]
+// page.nextCursor   -> string | null
+
+if (page.nextCursor) {
+  const next = await mgmt.deliveries.list("ws_abc", "ep_123", { cursor: page.nextCursor });
+}
+
+// Filter by status
+const failed = await mgmt.deliveries.list("ws_abc", "ep_123", { status: "failed" });
+
+// Get a single delivery's status + metadata
+const delivery = await mgmt.deliveries.get("ws_abc", "del_xyz");
+
+// Get a delivery with its decrypted payload. The response wraps the body in
+// an envelope whose `status` field describes whether the payload is available,
+// gated by plan ("forbidden"), still in flight ("processing"), or absent.
+const withPayload = await mgmt.deliveries.get("ws_abc", "del_xyz", { includePayload: true });
+if (withPayload.payload?.status === "available") {
+  console.log(withPayload.payload.data); // the original webhook body
+}
+
+// List the attempt history for a delivery
+const attempts = await mgmt.deliveries.getAttempts("ws_abc", "del_xyz");
+```
+
 ---
 
 ## Error Handling

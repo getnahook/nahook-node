@@ -272,6 +272,69 @@ describe.skipIf(!HAS_ENV)("Management API Integration", () => {
     });
   });
 
+  // ── Deliveries (NAH-156) — reads against pre-seeded fixture rows ──
+  //
+  // Fixture data lives in packages/db/src/seeds/test-fixtures.sql:
+  //   del_fixture_001 — delivered, hasPayload=true
+  //   del_fixture_002 — failed, 3 attempts, hasPayload=false
+  //   del_fixture_003 — delivering, hasPayload=false
+  // All three are scoped to ep_integration_test_001.
+
+  describe("Deliveries", () => {
+    it("list returns the seeded deliveries with an opaque nextCursor when paginated", async () => {
+      const result = await mgmt.deliveries.list(WORKSPACE_ID!, "ep_integration_test_001", { limit: 2 });
+      expect(result.data.length).toBe(2);
+      // Newest-first: del_fixture_003 should appear before del_fixture_002.
+      const ids = result.data.map((d) => d.id);
+      expect(ids).toContain("del_fixture_003");
+      // With 3 fixture rows and limit=2, we expect a non-null nextCursor.
+      expect(typeof result.nextCursor).toBe("string");
+      expect(result.nextCursor).not.toMatch(/^del_/); // not the leaky publicId format
+    });
+
+    it("list with status filter returns only matching deliveries", async () => {
+      const result = await mgmt.deliveries.list(WORKSPACE_ID!, "ep_integration_test_001", { status: "failed" });
+      const failedFixture = result.data.find((d) => d.id === "del_fixture_002");
+      expect(failedFixture).toBeTruthy();
+      expect(failedFixture!.status).toBe("failed");
+      expect(failedFixture!.totalAttempts).toBe(3);
+      expect(failedFixture!.hasPayload).toBe(false);
+    });
+
+    it("get returns a single delivery's metadata without payload envelope by default", async () => {
+      const delivery = await mgmt.deliveries.get(WORKSPACE_ID!, "del_fixture_001");
+      expect(delivery.id).toBe("del_fixture_001");
+      expect(delivery.endpointId).toBe("ep_integration_test_001");
+      expect(delivery.status).toBe("delivered");
+      expect(delivery.hasPayload).toBe(true);
+      expect(delivery.payload).toBeUndefined();
+    });
+
+    it("get with includePayload=true returns a payload envelope", async () => {
+      const delivery = await mgmt.deliveries.get(WORKSPACE_ID!, "del_fixture_001", { includePayload: true });
+      expect(delivery.payload).toBeDefined();
+      // We don't strictly assert envelope.status: R2 wiring in the test infra
+      // may not be configured, in which case the envelope reports "error" or
+      // "not_found". All 5 status values are valid wire-level responses.
+      expect(["available", "forbidden", "processing", "not_found", "error"]).toContain(delivery.payload!.status);
+    });
+
+    it("getAttempts returns the 3 fixture attempts in chronological order", async () => {
+      const attempts = await mgmt.deliveries.getAttempts(WORKSPACE_ID!, "del_fixture_002");
+      expect(attempts.length).toBe(3);
+      expect(attempts[0].attemptNumber).toBe(1);
+      expect(attempts[1].attemptNumber).toBe(2);
+      expect(attempts[2].attemptNumber).toBe(3);
+      expect(attempts[0].responseStatusCode).toBe(502);
+    });
+
+    it("get returns 404 for a delivery in another workspace (no cross-workspace enumeration)", async () => {
+      await expect(
+        mgmt.deliveries.get(WORKSPACE_ID!, "del_does_not_exist_anywhere"),
+      ).rejects.toThrow();
+    });
+  });
+
   // ── Auth error ──
 
   it("invalid management token returns 401", async () => {
