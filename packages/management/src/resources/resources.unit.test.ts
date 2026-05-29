@@ -317,7 +317,7 @@ describe("Management Resources", () => {
   // ── Deliveries (NAH-156) ──
 
   describe("deliveries", () => {
-    it("list() sends GET to /endpoints/:id/deliveries and exposes nextCursor + data", async () => {
+    it("list returns paginated data and next cursor", async () => {
       mockFetch({
         deliveries: [
           { id: "del_a", endpointId: "ep_1", status: "delivered", hasPayload: true, totalAttempts: 1, firstAttemptAt: "2026-05-28T14:30:59Z", deliveredAt: "2026-05-28T14:30:59Z", nextRetryAt: null, idempotencyKey: "k1", createdAt: "2026-05-28T14:30:59Z", updatedAt: "2026-05-28T14:30:59Z" },
@@ -335,14 +335,14 @@ describe("Management Resources", () => {
       expect(result.nextCursor).toBe("opaque-token-aaa");
     });
 
-    it("list() returns nextCursor: null when API returns null", async () => {
+    it("list returns null cursor when last page", async () => {
       mockFetch({ deliveries: [], nextCursor: null });
       const result = await mgmt.deliveries.list("ws_abc", "ep_1");
       expect(result.data).toEqual([]);
       expect(result.nextCursor).toBeNull();
     });
 
-    it("list() forwards limit, cursor, and status query params", async () => {
+    it("list forwards query params", async () => {
       mockFetch({ deliveries: [], nextCursor: null });
       await mgmt.deliveries.list("ws_abc", "ep_1", {
         limit: 25,
@@ -356,7 +356,7 @@ describe("Management Resources", () => {
       expect(parsed.searchParams.get("status")).toBe("failed");
     });
 
-    it("list() omits unset query params", async () => {
+    it("list omits unset query params", async () => {
       mockFetch({ deliveries: [], nextCursor: null });
       await mgmt.deliveries.list("ws_abc", "ep_1");
       const { url } = lastCall();
@@ -366,7 +366,7 @@ describe("Management Resources", () => {
       expect(parsed.searchParams.has("status")).toBe(false);
     });
 
-    it("get() sends GET to /deliveries/:id and returns shape without payload envelope", async () => {
+    it("get returns metadata without envelope by default", async () => {
       mockFetch({
         id: "del_a", idempotencyKey: "k1", endpointId: "ep_1", status: "delivered",
         totalAttempts: 1, firstAttemptAt: "2026-05-28T14:30:59Z", deliveredAt: "2026-05-28T14:30:59Z",
@@ -383,7 +383,7 @@ describe("Management Resources", () => {
       expect((delivery as { payload?: unknown }).payload).toBeUndefined();
     });
 
-    it("get() with includePayload=true adds ?include=payload and returns available envelope", async () => {
+    it("get with include payload returns envelope", async () => {
       mockFetch({
         id: "del_a", idempotencyKey: "k1", endpointId: "ep_1", status: "delivered",
         totalAttempts: 1, firstAttemptAt: "2026-05-28T14:30:59Z", deliveredAt: "2026-05-28T14:30:59Z",
@@ -401,7 +401,7 @@ describe("Management Resources", () => {
       });
     });
 
-    it("get() surfaces forbidden envelope unchanged when plan lacks payload storage", async () => {
+    it("get returns forbidden envelope for plan gated workspace", async () => {
       mockFetch({
         id: "del_a", idempotencyKey: "k1", endpointId: "ep_1", status: "delivered",
         totalAttempts: 1, firstAttemptAt: null, deliveredAt: "2026-05-28T14:30:59Z",
@@ -412,7 +412,7 @@ describe("Management Resources", () => {
       expect(delivery.payload).toEqual({ status: "forbidden" });
     });
 
-    it("getAttempts() sends GET to /deliveries/:id/attempts and returns array", async () => {
+    it("get attempts returns array", async () => {
       mockFetch([
         { id: "att_1", attemptNumber: 1, status: "failed", responseStatusCode: 502, responseTimeMs: 142, errorMessage: "Bad gateway", createdAt: "2026-05-28T14:31:00Z" },
         { id: "att_2", attemptNumber: 2, status: "success", responseStatusCode: 200, responseTimeMs: 88, errorMessage: null, createdAt: "2026-05-28T14:31:30Z" },
