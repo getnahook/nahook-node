@@ -102,6 +102,21 @@ const nahook2 = new NahookClient("nhk_us_...", { fetch: instrumentedFetch });
 
 When `fetch` is supplied, the SDK uses it verbatim and does **not** build its default Agent. Your fetch's underlying transport, lifecycle, and timeouts are entirely yours to manage. The same `fetch` option is accepted by `NahookManagement`.
 
+#### `close()` — graceful shutdown
+
+```typescript
+const client = new NahookClient("nhk_us_...");
+try {
+  await client.send("ep_abc123", { payload: { ... } });
+} finally {
+  await client.close();
+}
+```
+
+`close()` drains in-flight requests and closes the SDK-owned undici Agent's idle connection pool. Idempotent. When you supplied your own `fetch`, `close()` is a no-op — caller manages the transport's lifecycle.
+
+Useful for: clean test teardown, graceful shutdown before `process.exit()`, or recycling clients in long-running processes. The same `close()` method exists on `NahookManagement`.
+
 ### Send to a specific endpoint
 
 ```typescript

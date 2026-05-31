@@ -108,3 +108,48 @@ describe("HttpClient — BYO fetch (Pass 2)", () => {
     expect(capturedUA).toMatch(/^nahook-node\//);
   });
 });
+
+describe("HttpClient — close()", () => {
+  it("resolves without error on the default-Agent path", async () => {
+    const client = new HttpClient({ token: "nhk_us_test" });
+    await expect(client.close()).resolves.toBeUndefined();
+  });
+
+  it("forwards to the underlying Agent.close()", async () => {
+    const client = new HttpClient({ token: "nhk_us_test" });
+    const dispatcher = getDispatcher(client)!;
+    const spy = vi.spyOn(dispatcher, "close");
+
+    await client.close();
+
+    // Don't pin a specific call count — undici's Agent.close() cascades
+    // through its internal Pool which may invoke close() more than once.
+    // Just guard that we did trigger it.
+    expect(spy).toHaveBeenCalled();
+  });
+
+  it("is a no-op when BYO fetch was supplied (no SDK-owned Agent)", async () => {
+    const customFetch = vi.fn() as unknown as typeof fetch;
+    const client = new HttpClient({
+      token: "nhk_us_test",
+      fetch: customFetch,
+    });
+
+    await expect(client.close()).resolves.toBeUndefined();
+  });
+
+  it("is idempotent — second call is a no-op, not a throw", async () => {
+    const client = new HttpClient({ token: "nhk_us_test" });
+    const dispatcher = getDispatcher(client)!;
+    const spy = vi.spyOn(dispatcher, "close");
+
+    await client.close();
+    const callsAfterFirst = spy.mock.calls.length;
+
+    await expect(client.close()).resolves.toBeUndefined();
+
+    // Second SDK close() short-circuits via the `closed` flag — no additional
+    // Agent.close() invocations after the first SDK call's cascade settled.
+    expect(spy.mock.calls.length).toBe(callsAfterFirst);
+  });
+});

@@ -33,5 +33,17 @@ export class NahookManagement {
     this.portalSessions = new PortalSessionsResource(http);
     this.environments = new EnvironmentsResource(http);
     this.deliveries = new DeliveriesResource(http);
+    this.http = http;
+  }
+
+  private readonly http: HttpClient;
+
+  /**
+   * Drain in-flight requests and close the SDK-owned undici Agent's idle
+   * connection pool. Idempotent. No-op when a custom `fetch` was supplied
+   * via {@link NahookManagement}'s options.
+   */
+  async close(): Promise<void> {
+    await this.http.close();
   }
 }

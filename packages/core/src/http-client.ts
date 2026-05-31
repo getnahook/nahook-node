@@ -63,6 +63,11 @@ export class HttpClient {
    * that case the caller owns transport, not us.
    */
   private readonly dispatcher: Agent | undefined;
+  /**
+   * Tracks whether close() has run, so a second call is a safe no-op rather
+   * than a downstream error from undici when its Agent is closed twice.
+   */
+  private closed = false;
 
   constructor(config: HttpClientConfig) {
     this.token = config.token;
@@ -200,6 +205,17 @@ export class HttpClient {
     } catch {
       return new NahookAPIError(response.status, "unknown", response.statusText, retryAfterSecs);
     }
+  }
+
+  /**
+   * Drain in-flight requests and close the SDK-owned undici Agent's idle
+   * connection pool. Idempotent. No-op when BYO `fetch` was supplied — in
+   * that case the caller owns the transport's lifecycle.
+   */
+  async close(): Promise<void> {
+    if (this.closed) return;
+    this.closed = true;
+    await this.dispatcher?.close();
   }
 
   private buildUrl(path: string, query?: Record<string, string | number | undefined>): string {

@@ -71,4 +71,14 @@ export class NahookClient {
     });
     return data;
   }
+
+  /**
+   * Drain in-flight requests and close the SDK-owned undici Agent's idle
+   * connection pool. Call this for clean test teardown, graceful shutdown,
+   * or when recycling clients in long-running processes. Idempotent. No-op
+   * when a custom `fetch` was supplied via {@link NahookClient}'s options.
+   */
+  async close(): Promise<void> {
+    await this.http.close();
+  }
 }
