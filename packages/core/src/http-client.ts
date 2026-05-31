@@ -1,11 +1,26 @@
+import { Agent } from "undici";
 import { NahookAPIError, NahookNetworkError, NahookTimeoutError } from "./errors.js";
 import { calculateDelay, isRetryable, sleep } from "./retry.js";
 import type { RequestOptions } from "./types.js";
 
 const DEFAULT_BASE_URL = "https://api.nahook.com";
 const DEFAULT_TIMEOUT_MS = 30_000;
-const SDK_VERSION = "0.1.0";
+const SDK_VERSION = "0.2.0";
 const USER_AGENT = `nahook-node/${SDK_VERSION}`;
+
+/**
+ * Default undici Agent options. allowH2 enables HTTP/2 via ALPN — falls back
+ * to HTTP/1.1 if the server doesn't support h2. keepAliveTimeout extends
+ * undici's default 4s pool timeout to 60s so back-to-back sends within a
+ * minute don't pay a fresh TCP+TLS handshake. The 10-min cap forces
+ * connection recycling, which limits DNS staleness on long-running processes.
+ */
+const DEFAULT_AGENT_OPTIONS: Agent.Options = {
+  allowH2: true,
+  keepAliveTimeout: 60_000,
+  keepAliveMaxTimeout: 600_000,
+  connect: { timeout: 30_000 },
+};
 
 /** Region slug (from API key) → base URL */
 const REGION_BASE_URLS: Record<string, string> = {
@@ -28,6 +43,12 @@ export interface HttpClientConfig {
   baseUrl?: string;
   timeout?: number;
   retries?: number;
+  /**
+   * Optional custom fetch implementation. When supplied, the SDK uses it
+   * verbatim and does NOT build a default undici Agent. See ClientOptions.fetch
+   * for the full contract.
+   */
+  fetch?: typeof fetch;
 }
 
 export class HttpClient {
@@ -35,12 +56,37 @@ export class HttpClient {
   private readonly baseUrl: string;
   private readonly timeout: number;
   private readonly retries: number;
+  private readonly fetchImpl: typeof fetch;
+  /**
+   * Default-path dispatcher. Held only so tests can introspect the Agent
+   * configuration. Undefined when the caller supplied a custom fetch — in
+   * that case the caller owns transport, not us.
+   */
+  private readonly dispatcher: Agent | undefined;
 
   constructor(config: HttpClientConfig) {
     this.token = config.token;
     this.baseUrl = (config.baseUrl ?? resolveBaseUrl(config.token)).replace(/\/+$/, "");
     this.timeout = config.timeout ?? DEFAULT_TIMEOUT_MS;
     this.retries = config.retries ?? 0;
+
+    if (config.fetch) {
+      // BYO fetch: use verbatim, no SDK-side Agent construction.
+      this.fetchImpl = config.fetch;
+      this.dispatcher = undefined;
+    } else {
+      // Default: build a tuned undici Agent (HTTP/2 + 60s keep-alive) and
+      // pre-bind it to a wrapped global fetch. Node 18+'s `globalThis.fetch`
+      // IS undici under the hood and accepts the `dispatcher` option even
+      // though the global RequestInit type doesn't always advertise it — cast
+      // at the boundary. Going via the global also keeps `vi.stubGlobal("fetch")`
+      // and other test seams working transparently.
+      const dispatcher = new Agent(DEFAULT_AGENT_OPTIONS);
+      this.dispatcher = dispatcher;
+      const wrappedFetch = (input: RequestInfo | URL, init?: RequestInit): Promise<Response> =>
+        fetch(input, { ...init, dispatcher } as RequestInit & { dispatcher: Agent });
+      this.fetchImpl = wrappedFetch as typeof fetch;
+    }
   }
 
   async request<T>(opts: RequestOptions): Promise<T> {
@@ -119,7 +165,7 @@ export class HttpClient {
     const timer = setTimeout(() => controller.abort(), this.timeout);
 
     try {
-      const response = await fetch(url, { ...init, signal: controller.signal });
+      const response = await this.fetchImpl(url, { ...init, signal: controller.signal });
       return response;
     } catch (error) {
       if (error instanceof Error && error.name === "AbortError") {

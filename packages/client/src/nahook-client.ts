@@ -23,6 +23,7 @@ export class NahookClient {
       baseUrl: options.baseUrl,
       timeout: options.timeout,
       retries: options.retries,
+      fetch: options.fetch,
     });
   }
 

@@ -24,6 +24,7 @@ export class NahookManagement {
       token,
       baseUrl: options.baseUrl,
       timeout: options.timeout,
+      fetch: options.fetch,
     });
     this.endpoints = new EndpointsResource(http);
     this.eventTypes = new EventTypesResource(http);

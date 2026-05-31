@@ -4,6 +4,15 @@ export interface ClientOptions {
   baseUrl?: string;
   timeout?: number;
   retries?: number;
+  /**
+   * Optional custom fetch implementation. When supplied, the SDK uses it
+   * verbatim and does NOT construct its default undici Agent (so the HTTP/2
+   * + tuned keep-alive defaults are bypassed). Use this to plug in
+   * OpenTelemetry instrumentation, custom retry middleware, mTLS, a different
+   * transport library — anything fetch-shaped works. Caller owns the
+   * underlying transport's lifecycle.
+   */
+  fetch?: typeof fetch;
 }
 
 export interface RequestOptions {

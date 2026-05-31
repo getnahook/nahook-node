@@ -62,6 +62,42 @@ const nahook = new NahookClient("nhk_us_...", {
 
 For unit tests, mock the SDK client at the dependency injection boundary. For integration tests, override the base URL to point at a local server.
 
+### Advanced HTTP configuration
+
+The SDK ships with a tuned undici `Agent`:
+
+| Setting | Value |
+|---|---|
+| `allowH2` | `true` (HTTP/2 via ALPN, falls back to HTTP/1.1) |
+| `keepAliveTimeout` | `60_000` (60s — undici default is 4s, too aggressive for fan-out bursts) |
+| `keepAliveMaxTimeout` | `600_000` (10min cap → forces connection recycling so long-running processes don't hold stale DNS) |
+| `connect.timeout` | `30_000` (30s) |
+
+For most workloads the defaults are enough. When you need more — OpenTelemetry instrumentation, a custom Polly-style retry pipeline, mTLS, an entirely different HTTP library — pass your own `fetch`:
+
+```typescript
+import { fetch, Agent } from "undici";
+
+// Example 1: a tighter Agent for a higher-throughput workload.
+const dispatcher = new Agent({
+  allowH2: true,
+  connections: 200,
+  keepAliveTimeout: 30_000,
+});
+
+const nahook = new NahookClient("nhk_us_...", {
+  fetch: ((url, init) => fetch(url, { ...init, dispatcher })) as typeof fetch,
+});
+
+// Example 2: OpenTelemetry-instrumented fetch (any library that wraps fetch).
+import { wrap } from "@some-otel-package/fetch";
+const instrumentedFetch = wrap(globalThis.fetch, { service: "my-app" });
+
+const nahook2 = new NahookClient("nhk_us_...", { fetch: instrumentedFetch });
+```
+
+When `fetch` is supplied, the SDK uses it verbatim and does **not** build its default Agent. Your fetch's underlying transport, lifecycle, and timeouts are entirely yours to manage. The same `fetch` option is accepted by `NahookManagement`.
+
 ### Send to a specific endpoint
 
 ```typescript
