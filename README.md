@@ -73,6 +73,10 @@ The SDK ships with a tuned undici `Agent`:
 | `keepAliveMaxTimeout` | `600_000` (10min cap → forces connection recycling so long-running processes don't hold stale DNS) |
 | `connect.timeout` | `30_000` (30s) |
 
+> **Construct your client once, at module scope.** Each `new NahookClient(...)` builds its own undici `Agent` with its own connection pool. Re-instantiating per request (e.g., inside a request handler) creates a fresh pool every call and defeats the keep-alive entirely. The intended pattern is one long-lived client per process.
+
+> **Node-only scope.** This SDK targets `Node.js >= 18.0.0`. The HTTP/2 + keep-alive tuning relies on Node's bundled undici being reachable as `globalThis.fetch`. In environments where `globalThis.fetch` is a different implementation (browser bundlers, Vercel Edge Runtime, Cloudflare Workers), the `dispatcher` option is silently ignored and the SDK falls back to that runtime's default transport — it still works, just without the H2 + keep-alive defaults.
+
 For most workloads the defaults are enough. When you need more — OpenTelemetry instrumentation, a custom Polly-style retry pipeline, mTLS, an entirely different HTTP library — pass your own `fetch`:
 
 ```typescript
