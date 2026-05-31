@@ -62,6 +62,61 @@ const nahook = new NahookClient("nhk_us_...", {
 
 For unit tests, mock the SDK client at the dependency injection boundary. For integration tests, override the base URL to point at a local server.
 
+### Advanced HTTP configuration
+
+The SDK ships with a tuned undici `Agent`:
+
+| Setting | Value |
+|---|---|
+| `allowH2` | `true` (HTTP/2 via ALPN, falls back to HTTP/1.1) |
+| `keepAliveTimeout` | `60_000` (60s — undici default is 4s, too aggressive for fan-out bursts) |
+| `keepAliveMaxTimeout` | `600_000` (10min cap → forces connection recycling so long-running processes don't hold stale DNS) |
+| `connect.timeout` | `30_000` (30s) |
+
+> **Construct your client once, at module scope.** Each `new NahookClient(...)` builds its own undici `Agent` with its own connection pool. Re-instantiating per request (e.g., inside a request handler) creates a fresh pool every call and defeats the keep-alive entirely. The intended pattern is one long-lived client per process.
+
+> **Node-only scope.** This SDK targets `Node.js >= 18.0.0`. The HTTP/2 + keep-alive tuning relies on Node's bundled undici being reachable as `globalThis.fetch`. In environments where `globalThis.fetch` is a different implementation (browser bundlers, Vercel Edge Runtime, Cloudflare Workers), the `dispatcher` option is silently ignored and the SDK falls back to that runtime's default transport — it still works, just without the H2 + keep-alive defaults.
+
+For most workloads the defaults are enough. When you need more — OpenTelemetry instrumentation, a custom Polly-style retry pipeline, mTLS, an entirely different HTTP library — pass your own `fetch`:
+
+```typescript
+import { fetch, Agent } from "undici";
+
+// Example 1: a tighter Agent for a higher-throughput workload.
+const dispatcher = new Agent({
+  allowH2: true,
+  connections: 200,
+  keepAliveTimeout: 30_000,
+});
+
+const nahook = new NahookClient("nhk_us_...", {
+  fetch: ((url, init) => fetch(url, { ...init, dispatcher })) as typeof fetch,
+});
+
+// Example 2: OpenTelemetry-instrumented fetch (any library that wraps fetch).
+import { wrap } from "@some-otel-package/fetch";
+const instrumentedFetch = wrap(globalThis.fetch, { service: "my-app" });
+
+const nahook2 = new NahookClient("nhk_us_...", { fetch: instrumentedFetch });
+```
+
+When `fetch` is supplied, the SDK uses it verbatim and does **not** build its default Agent. Your fetch's underlying transport, lifecycle, and timeouts are entirely yours to manage. The same `fetch` option is accepted by `NahookManagement`.
+
+#### `close()` — graceful shutdown
+
+```typescript
+const client = new NahookClient("nhk_us_...");
+try {
+  await client.send("ep_abc123", { payload: { /* ... */ } });
+} finally {
+  await client.close();
+}
+```
+
+`close()` drains in-flight requests and closes the SDK-owned undici Agent's idle connection pool. Idempotent. When you supplied your own `fetch`, `close()` is a no-op — caller manages the transport's lifecycle.
+
+Useful for: clean test teardown, graceful shutdown before `process.exit()`, or recycling clients in long-running processes. The same `close()` method exists on `NahookManagement`.
+
 ### Send to a specific endpoint
 
 ```typescript
