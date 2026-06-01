@@ -1,6 +1,6 @@
 {
   "name": "@nahook/management",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Nahook management SDK — programmatic webhook, event type, and application management",
   "type": "module",
   "main": "./dist/index.cjs",

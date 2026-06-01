@@ -1,6 +1,6 @@
 {
   "name": "@nahook/client",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Nahook ingestion SDK — send and trigger webhook events",
   "type": "module",
   "main": "./dist/index.cjs",
