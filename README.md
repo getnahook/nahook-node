@@ -200,7 +200,6 @@ const endpoint = await mgmt.endpoints.create("ws_abc", {
   url: "https://example.com/webhooks",
   description: "Production webhook",
   type: "webhook", // "webhook" | "slack"
-  metadata: { team: "payments" },
 });
 
 const endpoint = await mgmt.endpoints.get("ws_abc", "ep_123");
