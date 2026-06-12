@@ -242,6 +242,16 @@ describe("Management Resources", () => {
       expect(app.maxEndpoints).toBe(5);
       expect(app.showEventTypes).toBe(false);
     });
+
+    it("response without the cap fields passes through raw (no synthesized defaults)", async () => {
+      // The SDK returns parsed JSON as-is: absent fields stay undefined,
+      // unlike the typed SDKs (go/java/dotnet/rust) which default
+      // showEventTypes to true. The live API always sends both fields.
+      mockFetch({ id: "app_1", name: "Acme" });
+      const app = await mgmt.applications.get("ws_abc", "app_1");
+      expect(app.maxEndpoints).toBeUndefined();
+      expect(app.showEventTypes).toBeUndefined();
+    });
   });
 
   // ── Subscriptions ──
