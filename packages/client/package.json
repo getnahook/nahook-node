@@ -1,6 +1,6 @@
 {
   "name": "@nahook/client",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "description": "Nahook ingestion SDK — send and trigger webhook events",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -21,7 +21,7 @@
     "undici": "^6.0.0"
   },
   "devDependencies": {
-    "@nahook/core": "0.2.2"
+    "@nahook/core": "0.3.0"
   },
   "engines": {
     "node": ">=18.0.0"
