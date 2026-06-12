@@ -100,6 +100,10 @@ export interface Application {
   externalId: string | null;
   name: string;
   metadata: Record<string, string>;
+  /** Maximum endpoints this application may have. `null` = unlimited. */
+  maxEndpoints: number | null;
+  /** Whether the Developer Portal exposes the event-type catalog to this application. */
+  showEventTypes: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -173,11 +177,25 @@ export interface CreateApplicationOptions {
   name: string;
   externalId?: string;
   metadata?: Record<string, string>;
+  /**
+   * Maximum endpoints this application may have (disabled endpoints count).
+   * `0` makes the application read-only; omit or `null` for unlimited.
+   */
+  maxEndpoints?: number | null;
+  /** Whether the Developer Portal exposes the event-type catalog. Defaults to `true`. */
+  showEventTypes?: boolean;
 }
 
 export interface UpdateApplicationOptions {
   name?: string;
   metadata?: Record<string, string>;
+  /**
+   * Tri-state: omit to leave unchanged, pass `null` to clear the cap
+   * (unlimited), or pass a number (≥ 0) to set it.
+   */
+  maxEndpoints?: number | null;
+  /** Omit to leave unchanged. */
+  showEventTypes?: boolean;
 }
 
 export interface CreateSubscriptionOptions {

@@ -195,6 +195,53 @@ describe("Management Resources", () => {
       expect(url).toContain("/applications/app_1/endpoints");
       expect(JSON.parse(init.body as string).url).toBe("https://example.com");
     });
+
+    // ── maxEndpoints + showEventTypes (tri-state PATCH semantics) ──
+
+    it("create() with maxEndpoints includes it in the body", async () => {
+      mockFetch({ id: "app_new", name: "Acme", maxEndpoints: 2, showEventTypes: true }, 201);
+      await mgmt.applications.create("ws_abc", { name: "Acme", maxEndpoints: 2 });
+      const body = JSON.parse(lastCall().init.body as string);
+      expect(body.maxEndpoints).toBe(2);
+    });
+
+    it("create() with showEventTypes=false includes it in the body", async () => {
+      mockFetch({ id: "app_new", name: "Acme", maxEndpoints: null, showEventTypes: false }, 201);
+      await mgmt.applications.create("ws_abc", { name: "Acme", showEventTypes: false });
+      const body = JSON.parse(lastCall().init.body as string);
+      expect(body.showEventTypes).toBe(false);
+    });
+
+    it("create() without the fields omits both from the body", async () => {
+      mockFetch({ id: "app_new", name: "Acme" }, 201);
+      await mgmt.applications.create("ws_abc", { name: "Acme" });
+      const body = JSON.parse(lastCall().init.body as string);
+      expect(body).not.toHaveProperty("maxEndpoints");
+      expect(body).not.toHaveProperty("showEventTypes");
+    });
+
+    it("update() with maxEndpoints=null sends explicit null (clears the cap)", async () => {
+      mockFetch({ id: "app_1", maxEndpoints: null });
+      await mgmt.applications.update("ws_abc", "app_1", { maxEndpoints: null });
+      const body = JSON.parse(lastCall().init.body as string);
+      expect(body).toHaveProperty("maxEndpoints");
+      expect(body.maxEndpoints).toBeNull();
+    });
+
+    it("update() omitting maxEndpoints leaves it out of the body (unchanged)", async () => {
+      mockFetch({ id: "app_1", name: "Renamed" });
+      await mgmt.applications.update("ws_abc", "app_1", { name: "Renamed" });
+      const body = JSON.parse(lastCall().init.body as string);
+      expect(body).not.toHaveProperty("maxEndpoints");
+      expect(body).not.toHaveProperty("showEventTypes");
+    });
+
+    it("response models expose maxEndpoints + showEventTypes", async () => {
+      mockFetch({ id: "app_1", name: "Acme", maxEndpoints: 5, showEventTypes: false });
+      const app = await mgmt.applications.get("ws_abc", "app_1");
+      expect(app.maxEndpoints).toBe(5);
+      expect(app.showEventTypes).toBe(false);
+    });
   });
 
   // ── Subscriptions ──
