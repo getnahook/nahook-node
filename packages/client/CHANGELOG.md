@@ -8,9 +8,9 @@ this project follows [Semantic Versioning](https://semver.org/).
 ## [0.3.0] - 2026-06-12
 
 
-### Features
+### Changed
 
-- Application maxEndpoints + showEventTypes across all 8 SDKs
+- Version bump in lockstep with @nahook/core and @nahook/management (per-application endpoint cap on the applications resource); no ingestion-client changes
 
 ## [0.2.2] - 2026-06-01
 

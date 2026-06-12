@@ -5,7 +5,7 @@ import type { RequestOptions } from "./types.js";
 
 const DEFAULT_BASE_URL = "https://api.nahook.com";
 const DEFAULT_TIMEOUT_MS = 30_000;
-const SDK_VERSION = "0.2.1";
+const SDK_VERSION = "0.3.0";
 const USER_AGENT = `nahook-node/${SDK_VERSION}`;
 
 /**
