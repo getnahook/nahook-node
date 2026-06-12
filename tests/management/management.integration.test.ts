@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from "vitest";
-import { NahookManagement } from "../../packages/management/src/index.js";
+import { NahookManagement, NahookAPIError } from "../../packages/management/src/index.js";
 
 /**
  * Management API integration tests.
@@ -140,6 +140,90 @@ describe.skipIf(!HAS_ENV)("Management API Integration", () => {
       await expect(
         mgmt.applications.get(WORKSPACE_ID!, createdAppId),
       ).rejects.toThrow();
+    });
+
+    it("application maxEndpoints cap lifecycle (I1-I5)", async () => {
+      const ts = Date.now();
+      let appId: string | undefined;
+      const endpointIds: string[] = [];
+
+      const expectCapRejection = async () => {
+        let capError: unknown;
+        try {
+          await mgmt.applications.createEndpoint(WORKSPACE_ID!, appId!, {
+            url: "https://httpbin.org/post",
+          });
+        } catch (err) {
+          capError = err;
+        }
+        expect(capError).toBeInstanceOf(NahookAPIError);
+        expect((capError as NahookAPIError).status).toBe(403);
+        expect((capError as NahookAPIError).code).toBe("application_endpoint_limit_reached");
+      };
+
+      try {
+        // I1: create with maxEndpoints cap + showEventTypes off, verify echo + persistence
+        const created = await mgmt.applications.create(WORKSPACE_ID!, {
+          name: `Cap App ${ts}`,
+          maxEndpoints: 2,
+          showEventTypes: false,
+        });
+        appId = created.id;
+        expect(created.maxEndpoints).toBe(2);
+        expect(created.showEventTypes).toBe(false);
+        const fetched = await mgmt.applications.get(WORKSPACE_ID!, appId);
+        expect(fetched.maxEndpoints).toBe(2);
+        expect(fetched.showEventTypes).toBe(false);
+
+        // I2: update both fields, verify echo + persistence
+        const updated = await mgmt.applications.update(WORKSPACE_ID!, appId, {
+          maxEndpoints: 1,
+          showEventTypes: true,
+        });
+        expect(updated.maxEndpoints).toBe(1);
+        expect(updated.showEventTypes).toBe(true);
+        const refetched = await mgmt.applications.get(WORKSPACE_ID!, appId);
+        expect(refetched.maxEndpoints).toBe(1);
+        expect(refetched.showEventTypes).toBe(true);
+
+        // I3: first endpoint fits the cap of 1; second is rejected with 403
+        const ep1 = await mgmt.applications.createEndpoint(WORKSPACE_ID!, appId, {
+          url: "https://httpbin.org/post",
+        });
+        expect(ep1.id).toBeTruthy();
+        endpointIds.push(ep1.id);
+        await expectCapRejection();
+
+        // I4: disabled endpoints still count against the cap
+        await mgmt.endpoints.update(WORKSPACE_ID!, ep1.id, { isActive: false });
+        await expectCapRejection();
+
+        // I5: explicit null clears the cap; creation succeeds again
+        const uncapped = await mgmt.applications.update(WORKSPACE_ID!, appId, {
+          maxEndpoints: null,
+        });
+        expect(uncapped.maxEndpoints).toBe(null);
+        const ep2 = await mgmt.applications.createEndpoint(WORKSPACE_ID!, appId, {
+          url: "https://httpbin.org/post",
+        });
+        expect(ep2.id).toBeTruthy();
+        endpointIds.push(ep2.id);
+      } finally {
+        for (const epId of endpointIds) {
+          try {
+            await mgmt.endpoints.delete(WORKSPACE_ID!, epId);
+          } catch {
+            // cleanup best-effort
+          }
+        }
+        if (appId) {
+          try {
+            await mgmt.applications.delete(WORKSPACE_ID!, appId);
+          } catch {
+            // cleanup best-effort
+          }
+        }
+      }
     });
   });
 
